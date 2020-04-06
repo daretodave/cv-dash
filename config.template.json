@@ -1,0 +1,23 @@
+{
+  "MAPBOX_API_TOKEN": "XXXXX",
+  "DATASETS": [
+    {
+      "url": "https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
+      "path_description": "Combined_Key",
+      "path_count": {
+        "start": "2020-01-22",
+        "offset": 1,
+        "current": "@M/D/YY"
+      },
+      "path_region": "FIPS",
+      "path_location": {
+        "latitude": "Lat",
+        "longitude": "Long_",
+        "region": "Country_Region",
+        "province": "Province_State",
+        "county": "Admin2"
+      },
+      "path_label": "#confirmed"
+    }
+  ]
+}
