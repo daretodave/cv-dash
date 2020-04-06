@@ -72,7 +72,7 @@ const print = geo => async () => {
                                 const points = stateEntry.counties.map(county => county.geometry.coordinates);
 
                                 const entryAll = stateEntry.counties[0].properties.all;
-                                const entryLabels = stateEntry.counties[0].properties.result.labels;
+                                const entryLabels = stateEntry.counties[0].properties.labels;
 
                                 return {
                                     "type": "Feature",
@@ -85,15 +85,13 @@ const print = geo => async () => {
                                         name: stateEntry.name,
                                         iso: geo.iso,
                                         all: entryAll,
-                                        result: {
-                                            labels: entryLabels,
-                                            ...Object.keys(stateEntry)
-                                                .filter(key => entryLabels.includes(key.split("_")[0]))
-                                                .reduce((resultMap, resultEntry) => {
-                                                    resultMap[resultEntry] = stateEntry[resultEntry];
-                                                    return resultMap;
-                                                }, {})
-                                        }
+                                        labels: entryLabels,
+                                        ...Object.keys(stateEntry)
+                                            .filter(key => entryLabels.includes(key.split("_")[0]))
+                                            .reduce((resultMap, resultEntry) => {
+                                                resultMap[resultEntry] = stateEntry[resultEntry];
+                                                return resultMap;
+                                            }, {})
                                     },
                                 }
                             }
@@ -161,12 +159,11 @@ const grab = (regionsMap, regionsAll) => async source => {
         const labelCounty = _(path_location.county);
         const labelProvince = _(path_location.province);
 
-        const keyCount = `${label}_latest_count`;
-        const keyDate = `${label}_latest_date`;
+        const keyCount = `result_${label}_count`;
+        const keyDate = `result_${label}_when`;
 
         regionFeature.region.properties.all = regionsAll;
         regionFeature.region.properties.state = regionFeature.state || regionFeature.regionState;
-        regionFeature.region.properties.result = regionFeature.region.properties.result || {labels: []};
 
         const date = target.format("YYYY-MM-DD");
         const count = Number(record[target.format("M/D/YY")]);
@@ -183,11 +180,12 @@ const grab = (regionsMap, regionsAll) => async source => {
         regionFeature.region.id_state = regionFeature.region.id_state || Number(regionFeature.region.properties["STATEFP"]);
         regionFeature.region.id_county = regionFeature.region.id_state || Number(regionFeature.region.properties["COUNTYFP"]);
 
-        regionFeature.region.properties.result.labels.push(label);
+        regionFeature.region.properties.labels = regionFeature.region.properties.labels || [];
+        regionFeature.region.properties.labels.push(label);
 
-        regionFeature.region.properties.result[keyDate] = regionFeature.region.properties.result[keyDate] || date;
-        regionFeature.region.properties.result[keyCount] = regionFeature.region.properties.result[keyCount] || 0;
-        regionFeature.region.properties.result[keyCount] += count;
+        regionFeature.region.properties[keyDate] = regionFeature.region.properties[keyDate] || date;
+        regionFeature.region.properties[keyCount] = regionFeature.region.properties[keyCount] || 0;
+        regionFeature.region.properties[keyCount] += count;
 
         regionFeature.regionState[keyDate] = regionFeature.regionState[keyDate] || date;
         regionFeature.regionState[keyCount] = regionFeature.regionState[keyCount] || 0;

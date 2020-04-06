@@ -1,9 +1,11 @@
-import {GeoJsonLayer} from '@deck.gl/layers';
+import {ColumnLayer, GeoJsonLayer, ScatterplotLayer, TextLayer} from '@deck.gl/layers';
 import {MapboxLayer} from '@deck.gl/mapbox';
 
 import {getConfig} from '../common';
+import {HexagonLayer} from "@deck.gl/aggregation-layers";
 
-const _regions = require("../../data/gen/us_records_by_state");
+const _counties = require("../../data/gen/us_records");
+const {flattenDeep} = require("lodash/array");
 
 const $create = (tag, id) => {
     const $element = document.createElement(tag);
@@ -22,100 +24,85 @@ mapboxgl.accessToken = getConfig("MAPBOX_API_TOKEN");
 
 const map = new mapboxgl.Map({
     container: $create("div", "map"),
-    style: 'mapbox://styles/daretodave/ck8nwrz8o2n3s1jmuscar6vlg',
+    style: 'mapbox://styles/mapbox/dark-v9',
+    zoom: 4,
+    pitch: 20,
+    center: [-90.961975, 36.368353]
+
 });
 
 map.on('load', () => {
-    var zoomThreshold = 4;
+    map.addLayer(new MapboxLayer({
+        type: ScatterplotLayer,
+        id: 'cv-scatter',
+        data: _counties.features,
+        getPosition: d => {
+            const coords = flattenDeep(d.geometry.coordinates);
 
-    map.addSource('us_regions', {
-        'type': 'geojson',
-        'data': _regions,
-    });
+            return center(coords);
+        },
+        getColor: d => [255, 255, 255],
+        getFillColor: d => [d.properties.result_confirmed_count, 0, 100],
+        getRadius: d => 5000 + (10000 * Math.log(d.properties.result_confirmed_count)),
+        opacity: 1
+    }));
 
+    map.addLayer(new MapboxLayer({
+        type: TextLayer,
+        id: 'cv-scatter-text',
+        data: _counties.features,
+        getText: d => `${d.properties.result_confirmed_count}`,
+        getPosition: d => {
+            const coords = flattenDeep(d.geometry.coordinates);
 
-// Last value is the default, used where there is no data
-// Add layer from the vector tile source with data-driven style
-    map.addLayer({
-        'id': 'regions-fill',
-        'type': 'fill',
-        'source': 'us_regions',
-        'paint': {
-            'fill-color': 'rgb(103,104,105)',
-            'fill-opacity': [
-                'case',
-                ['boolean', ['feature-state', 'hover'], false],
-                1,
-                0.5
-            ]
-        }
-    });
-
-    let hoveredStateId = null;
-
-    map.on('mousemove', 'regions-fill', function (e) {
-        if (e.features.length > 0) {
-            if (hoveredStateId) {
-                map.setFeatureState(
-                    {source: 'us_regions', id: hoveredStateId},
-                    {hover: false}
-                );
-            }
-            hoveredStateId = e.features[0].id;
-            map.setFeatureState(
-                {source: 'us_regions', id: hoveredStateId},
-                {hover: true}
-            );
-        }
-    });
-
-// When the mouse leaves the state-fill layer, update the feature state of the
-// previously hovered feature.
-    map.on('mouseleave', 'regions-fill', function () {
-        if (hoveredStateId) {
-            map.setFeatureState(
-                {source: 'us_regions', id: hoveredStateId},
-                {hover: false}
-            );
-        }
-        hoveredStateId = null;
-    });
-
-    // map.addLayer(
-    //     {
-    //         'id': 'labels',
-    //         'type': 'symbol',
-    //         'source': 'us_regions',
-    //         'layout': {
-    //             'text-field': ['get', 'NAME'],
-    //             'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-    //             'text-radial-offset': 1,
-    //             'text-justify': 'auto',
-    //         }
-    //     });
-
-
+            return center(coords);
+        },
+        getSize: 32,
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'center',
+    }));
     // map.addLayer(new MapboxLayer({
-    //     type: GeoJsonLayer,
-    //     id: 'us_records',
-    //     data: _regions,
-    //     opacity: 0.5,
-    //     stroked: true,
-    //     filled: true,
+    //     type: HexagonLayer,
+    //     id: 'cv-hex',
+    //     data: _counties.features,
+    //     getPosition: d => {
+    //         const coords = flattenDeep(d.geometry.coordinates);
+    //
+    //         return center(coords);
+    //     },
+    //     colorRange: [
+    //         [1, 152, 189],
+    //         [73, 227, 206],
+    //         [216, 254, 181],
+    //         [254, 237, 177],
+    //         [254, 173, 84],
+    //         [209, 55, 78]
+    //     ],
+    //     // elevationRange: [0, 1000],
+    //     // elevationScale: 250,
     //     extruded: true,
-    //     wireframe: true,
-    //     fp64: true,
-    //     getLineColor: f => {
-    //         const stateIdx = Number(f.properties["STATEFP"] || 1) / 60;
-    //
-    //         return [stateIdx * 255, 255, 255]
-    //     },
-    //     getElevation: f => {
-    //         if (!f.properties.result) {
-    //             return 0;
-    //         }
-    //
-    //         return Math.sqrt(f.properties.result.confirmed_latest_count) * 50;
-    //     },
+    //     radius: 25000,
+    //     coverage: 1,
+    //     upperPercentile: 100
     // }))
+
 });
+
+function center(points) {
+    const pointList = [];
+
+    points = flattenDeep(points);
+
+    for (let index = 0; index < points.length; index += 2) {
+        pointList.push(
+            [points[index],
+                points[index + 1]]
+        )
+    }
+
+    var x = pointList.map(xy => xy[0]);
+    var y = pointList.map(xy => xy[1]);
+    var cx = (Math.min(...x) + Math.max(...x)) / 2;
+    var cy = (Math.min(...y) + Math.max(...y)) / 2;
+    return [cx, cy];
+}
