@@ -1,5 +1,5 @@
 {
-  "MAPBOX_API_TOKEN": "XXXXX",
+  "MAPBOX_API_TOKEN": "pk.eyJ1IjoiZGFyZXRvZGF2ZSIsImEiOiJjazhudHF2ZjAwdGw4M2ZwZXhwMnN2YnRxIn0.CoAEfzFMXa1lgwykVV_wLw",
   "DATASETS": [
     {
       "url": "https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv",
